@@ -1,0 +1,92 @@
+name: Config Lint
+
+# defaults writes each prefs.txt line with the type it names, so every line must
+# be a # note or <type> <key> <value> with a type defaults accepts. the script,
+# the themes and the key bindings plist are checked on linux, since no macos
+# runner is spent on a few text files.
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Validate preferences, themes and the install script
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Check prefs.txt, the themes and the key bindings file
+        run: |
+          python3 - <<'PYEOF'
+          import glob, json, plistlib, re, sys
+
+          bad = 0
+          seen = {}
+          for n, line in enumerate(open("prefs.txt").read().splitlines(), 1):
+              if not line.strip() or line.lstrip().startswith("#"):
+                  continue
+              m = re.match(r"^(string|bool|int|data) ([A-Za-z0-9_.]+) (.+)$", line)
+              if not m:
+                  print(f"::error file=prefs.txt,line={n}::not a # note or <type> <key> <value> line")
+                  bad = 1
+                  continue
+              kind, key, value = m.groups()
+              if key in seen:
+                  print(f"::error file=prefs.txt,line={n}::{key} is also set on line {seen[key]}")
+                  bad = 1
+              seen[key] = n
+              if kind == "bool" and value not in ("true", "false"):
+                  print(f"::error file=prefs.txt,line={n}::{key} is a bool but {value} is not true or false")
+                  bad = 1
+              if kind == "int" and not re.fullmatch(r"-?\d+", value):
+                  print(f"::error file=prefs.txt,line={n}::{key} is an int but {value} is not a whole number")
+                  bad = 1
+              if kind == "data":
+                  if not re.fullmatch(r"(?:[0-9a-f]{2})+", value):
+                      print(f"::error file=prefs.txt,line={n}::{key} is data but {value[:20]} is not hex")
+                      bad = 1
+                  elif key == "DVTWorkspaceThemeSettings":
+                      # xcode stores this setting as a json document, so the hex must decode to one
+                      json.loads(bytes.fromhex(value))
+          print(f"prefs.txt: {len(seen)} preferences")
+
+          for path in sorted(glob.glob("KeyBindings/*.idekeybindings")):
+              with open(path, "rb") as f:
+                  data = plistlib.load(f)
+              if not isinstance(data, dict):
+                  print(f"::error file={path}::the root is not a dictionary")
+                  bad = 1
+              print(f"{path}: parses")
+
+          themes = sorted(glob.glob("theme/*.xccolortheme"))
+          for path in themes:
+              with open(path, "rb") as f:
+                  if not isinstance(plistlib.load(f), dict):
+                      print(f"::error file={path}::the root is not a dictionary")
+                      bad = 1
+          print(f"theme/: {len(themes)} classic themes parse")
+          if len(themes) != 8:
+              print(f"::error::expected 8 .xccolortheme files, found {len(themes)}")
+              bad = 1
+          for path in sorted(glob.glob("theme/*.xcworkspacecolortheme")):
+              json.load(open(path))
+              print(f"{path}: parses")
+          sys.exit(bad)
+          PYEOF
+
+      - name: Check the install script
+        run: |
+          bash -n apply.sh
+          shellcheck apply.sh
