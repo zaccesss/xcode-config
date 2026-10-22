@@ -23,6 +23,14 @@ one key at a time.
   defaults domain before the first write, refuses to run while Xcode is open and takes `--dry-run`
   to show what would change without writing anything.
 
+## In action
+
+Xcode in Zacess Deep Contrast Dark, the theme this setup restores, with a Swift file open.
+
+![Xcode in Zacess Deep Contrast Dark (black background) with Inventory.swift, a small Swift stock-count class, open in the editor](docs/demo/xcode-deep-contrast-dark.webp)
+
+The theme is from [Zacess Themes](https://github.com/zacesshq/themes), along with seven more.
+
 ## Setup
 
 Full walkthrough in [guides/setup.md](guides/setup.md). In short, quit Xcode and run:
@@ -57,3 +65,4 @@ accessibility permission, so nothing for it lives in this repo.
 | [`theme/`](theme/) | Copied to `~/Library/Developer/Xcode/UserData/FontAndColorThemes/` |
 | [`KeyBindings/`](KeyBindings/) | Copied to `~/Library/Developer/Xcode/UserData/KeyBindings/` |
 | [`guides/`](guides/) | Setup walkthrough and the preferences reference |
+| [`docs/demo/`](docs/demo/) | A screenshot of the editor in Zacess Deep Contrast Dark |
