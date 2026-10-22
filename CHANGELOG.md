@@ -9,6 +9,10 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- A screenshot of the editor in the Zacess Deep Contrast Dark theme.
+
 ## [0.0.1] - 2026-10-22
 
 ### Added
